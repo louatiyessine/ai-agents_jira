@@ -1,0 +1,23 @@
+PRÉSENTATION DE L'ENTREPRISE TECHNOVA
+
+TechNova est une entreprise fondée en 2018, spécialisée dans le développement de solutions d'intelligence artificielle pour les petites et moyennes entreprises. Le siège social est situé à Tunis, avec un bureau secondaire à Sousse.
+
+DÉPARTEMENTS ET ÉQUIPES
+
+L'entreprise est organisée en trois départements principaux : le département Recherche et Développement (R&D), le département Commercial, et le département Support Client. Le département R&D compte 12 ingénieurs spécialisés en machine learning et traitement du langage naturel.
+
+POLITIQUE DE CONGÉS
+
+Les employés de TechNova bénéficient de 21 jours de congés payés par an. Les demandes de congé doivent être soumises au moins deux semaines à l'avance via le portail RH interne. Les congés maladie nécessitent un certificat médical à partir du troisième jour d'absence.
+
+PRODUITS PRINCIPAUX
+
+TechNova développe trois produits principaux : un chatbot d'assistance client nommé NovaChat, une plateforme d'analyse de données nommée NovaAnalytics, et un outil de génération automatique de rapports nommé NovaReport. NovaChat est utilisé par plus de 200 entreprises clientes en Afrique du Nord.
+
+PROCÉDURE DE STAGE
+
+Les stagiaires de TechNova sont encadrés par un ingénieur senior pendant toute la durée du stage. Chaque stagiaire doit présenter son travail lors de réunions hebdomadaires avec son encadrant, et produire un rapport final détaillant les choix techniques effectués. Les stages durent généralement entre 2 et 6 mois.
+
+TÉLÉTRAVAIL
+
+La politique de télétravail de TechNova autorise jusqu'à 2 jours de travail à distance par semaine pour les employés permanents, sous réserve d'accord du responsable d'équipe. Les stagiaires ne sont pas éligibles au télétravail durant leur période d'évaluation initiale (le premier mois).
