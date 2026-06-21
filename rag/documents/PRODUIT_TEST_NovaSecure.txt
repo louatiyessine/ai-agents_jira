@@ -1,0 +1,4 @@
+PRODUIT TEST : NovaSecure
+
+NovaSecure est un nouveau produit de cybersécurité lancé par TechNova en 2026.
+Il protège les serveurs contre les intrusions et coûte 49 dollars par mois.
