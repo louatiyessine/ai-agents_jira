@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>AI Agents - Démo</title>
+<style>
+  :root {
+    --bg: #0d0f0d;
+    --surface: #161916;
+    --border: #2a2f2a;
+    --text: #d9f2d9;
+    --text-dim: #7a9c7a;
+    --accent: #3ecf6e;
+    --accent-dim: #1f6b3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+  }
+  h1 {
+    font-size: 18px; font-weight: 500; color: var(--accent);
+    max-width: 720px; margin: 0 auto; padding: 24px 16px 8px;
+  }
+
+  #resultats {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 16px 220px;
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  #zoneSaisie {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 14px 16px;
+  }
+  #zoneSaisie > * { max-width: 720px; margin: 0 auto; }
+
+  #modeBar { position: relative; margin-bottom: 8px; max-width: 720px; margin-left: auto; margin-right: auto; }
+  #modeButton {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #modeButton:hover { border-color: var(--accent-dim); }
+  #modeMenu {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 4px;
+    overflow: hidden;
+  }
+  #modeMenu.open { display: block; }
+  .mode-option { padding: 10px 14px; cursor: pointer; font-size: 14px; }
+  .mode-option:hover { background: var(--accent-dim); }
+  .mode-option .desc { color: var(--text-dim); font-size: 12px; }
+
+  select#agentSelect {
+    width: 100%; background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px; margin-bottom: 8px; font-size: 14px;
+    display: block; max-width: 720px; margin-left: auto; margin-right: auto;
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 14px;
+    resize: vertical;
+    margin-bottom: 8px;
+    display: block;
+  }
+  textarea:focus { outline: none; border-color: var(--accent-dim); }
+
+  button#sendBtn {
+    background: var(--accent);
+    color: #052b0f;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: block;
+  }
+  button#sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .message {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 12px;
+  }
+  .message.gemini { border-left: 3px solid var(--accent); }
+  .message.llama { border-left: 3px solid #d99b3e; }
+  .agent-label { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+  .meta { font-size: 11px; color: var(--text-dim); margin-top: 6px; font-family: monospace; }
+</style>
+</head>
+<h1>Démo Agents IA</h1>
+
+<div id="resultats"></div>
+
+<div id="zoneSaisie">
+  <div id="modeBar">
+    <div id="modeButton" onclick="toggleMenu()">
+      <span id="modeLabel">Demander à un agent</span>
+      <span>▾</span>
+    </div>
+    <div id="modeMenu">
+      <div class="mode-option" onclick="choisirMode('chat')">
+        Demander à un agent<br><span class="desc">Une seule réponse, agent au choix</span>
+      </div>
+      <div class="mode-option" onclick="choisirMode('compare')">
+        Comparer les deux agents<br><span class="desc">Même question, deux réponses côte à côte</span>
+      </div>
+      <div class="mode-option" onclick="choisirMode('dialogue')">
+        Dialogue entre agents<br><span class="desc">Les deux agents discutent entre eux</span>
+      </div>
+    </div>
+  </div>
+
+  <select id="agentSelect">
+    <option value="gemini">Agent 1 — Gemini (RAG)</option>
+    <option value="llama">Agent 2 — Llama (sans RAG)</option>
+  </select>
+
+  <textarea id="question" rows="2" placeholder="Pose ta question..."></textarea>
+  <button id="sendBtn" onclick="envoyer()">Envoyer</button>
+</div>
+<script>
+let mode = "chat";
+
+function toggleMenu() {
+  document.getElementById("modeMenu").classList.toggle("open");
+}
+
+function choisirMode(m) {
+  mode = m;
+  const labels = {
+    chat: "Demander à un agent",
+    compare: "Comparer les deux agents",
+    dialogue: "Dialogue entre agents"
+  };
+  document.getElementById("modeLabel").textContent = labels[m];
+  document.getElementById("modeMenu").classList.remove("open");
+  document.getElementById("agentSelect").style.display = (m === "chat") ? "block" : "none";
+}
+
+async function envoyer() {
+  const question = document.getElementById("question").value.trim();
+  if (!question) return;
+
+  const btn = document.getElementById("sendBtn");
+  btn.disabled = true;
+  btn.textContent = "Patientez...";
+
+  try {
+    if (mode === "chat") {
+      const agent = document.getElementById("agentSelect").value;
+      const data = await appelApi("/api/chat", { question, agent });
+      afficherMessage(agent, data.reponse, data.tokens_total);
+
+    } else if (mode === "compare") {
+      const data = await appelApi("/api/compare", { question });
+      afficherMessage("gemini", data.agent_1_gemini.reponse, data.agent_1_gemini.tokens_total, data.agent_1_gemini.cout_usd);
+      afficherMessage("llama", data.agent_2_llama.reponse, data.agent_2_llama.tokens_total, data.agent_2_llama.cout_si_api_payante_usd);
+
+    } else if (mode === "dialogue") {
+      const data = await appelApi("/api/dialogue", { sujet: question, nombre_tours: 2 });
+      data.historique.forEach(entree => {
+        const agentType = entree.agent.includes("Gemini") ? "gemini" : "llama";
+        afficherMessage(agentType, entree.message, entree.tokens);
+      });
+    }
+  } catch (erreur) {
+    afficherErreur(erreur.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Envoyer";
+  }
+}
+
+async function appelApi(url, corps) {
+  const reponse = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(corps)
+  });
+  if (!reponse.ok) {
+    const erreur = await reponse.json();
+    throw new Error(erreur.erreur || "Erreur serveur");
+  }
+  return reponse.json();
+}
+
+function afficherMessage(agent, texte, tokens, cout) {
+  const div = document.createElement("div");
+  div.className = "message " + agent;
+  let meta = "Tokens: " + tokens;
+  if (cout !== undefined) meta += "  |  Coût: $" + cout;
+  div.innerHTML = '<div class="agent-label">' + (agent === "gemini" ? "Agent 1 — Gemini (RAG)" : "Agent 2 — Llama") + '</div>'
+                + texte
+                + '<div class="meta">' + meta + '</div>';
+  document.getElementById("resultats").prepend(div);
+}
+
+function afficherErreur(texte) {
+  const div = document.createElement("div");
+  div.className = "message";
+  div.style.borderLeftColor = "#e24b4a";
+  div.textContent = "Erreur : " + texte;
+  document.getElementById("resultats").prepend(div);
+}
+</script>
+
+</body>
+</html>
