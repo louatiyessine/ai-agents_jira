@@ -57,6 +57,28 @@ def rechercher_contexte(question, k=3):
 
     resultats = vectorstore.similarity_search(question, k=k)
     return "\n\n".join([doc.page_content for doc in resultats])
+def ajouter_document(chemin_fichier):
+    """Ajoute un seul nouveau document à la base vectorielle existante, sans tout recalculer."""
+    nom_fichier = os.path.basename(chemin_fichier)
+
+    if nom_fichier.endswith(".pdf"):
+        loader = PyPDFLoader(chemin_fichier)
+    elif nom_fichier.endswith(".txt"):
+        loader = TextLoader(chemin_fichier, encoding="utf-8")
+    else:
+        raise ValueError("Seuls les fichiers .pdf et .txt sont acceptés.")
+
+    documents = loader.load()
+    chunks = decouper_en_chunks(documents)
+
+    if os.path.exists(CHROMA_DIR) and os.listdir(CHROMA_DIR):
+        vectorstore = charger_base_existante()
+    else:
+        vectorstore = construire_base_vectorielle()
+        return len(chunks)
+
+    vectorstore.add_documents(chunks)
+    return len(chunks)
 if __name__ == "__main__":
     print("Construction de la base vectorielle...")
     construire_base_vectorielle()

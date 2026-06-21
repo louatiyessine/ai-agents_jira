@@ -148,7 +148,11 @@
     <option value="gemini">Agent 1 — Gemini (RAG)</option>
     <option value="llama">Agent 2 — Llama (sans RAG)</option>
   </select>
-
+<div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+  <button id="plusBtn" onclick="document.getElementById('fichierInput').click()" style="width:40px; padding:8px; font-weight:bold;">+</button>
+  <input type="file" id="fichierInput" accept=".pdf,.txt" style="display:none;" onchange="televerserFichier()">
+  <span id="fichierNom" style="font-size:12px; color:var(--text-dim);"></span>
+</div>
   <textarea id="question" rows="2" placeholder="Pose ta question..."></textarea>
   <button id="sendBtn" onclick="envoyer()">Envoyer</button>
 </div>
@@ -170,7 +174,34 @@ function choisirMode(m) {
   document.getElementById("modeMenu").classList.remove("open");
   document.getElementById("agentSelect").style.display = (m === "chat") ? "block" : "none";
 }
+async function televerserFichier() {
+  const input = document.getElementById("fichierInput");
+  const fichier = input.files[0];
+  if (!fichier) return;
 
+  document.getElementById("fichierNom").textContent = "Envoi de " + fichier.name + "...";
+
+  const formData = new FormData();
+  formData.append("fichier", fichier);
+
+  try {
+    const reponse = await fetch("/api/upload", {
+      method: "POST",
+      body: formData
+    });
+    const data = await reponse.json();
+
+    if (!reponse.ok) {
+      throw new Error(data.erreur || "Erreur lors de l'envoi.");
+    }
+
+    document.getElementById("fichierNom").textContent = fichier.name + " ajouté (" + data.chunks_ajoutes + " segments)";
+  } catch (erreur) {
+    document.getElementById("fichierNom").textContent = "Erreur : " + erreur.message;
+  }
+
+  input.value = "";
+}
 async function envoyer() {
   const question = document.getElementById("question").value.trim();
   if (!question) return;

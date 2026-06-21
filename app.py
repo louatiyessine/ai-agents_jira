@@ -1,6 +1,7 @@
 import os
 import sys
-
+from werkzeug.utils import secure_filename
+from rag.rag_engine import ajouter_document
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
@@ -61,5 +62,36 @@ def compare():
 
     rapport = generer_rapport_comparaison(resultat_gemini, resultat_llama, question)
     return jsonify(rapport)
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "rag", "documents")
+EXTENSIONS_AUTORISEES = {"pdf", "txt"}
+
+def extension_autorisee(nom_fichier):
+    return "." in nom_fichier and nom_fichier.rsplit(".", 1)[1].lower() in EXTENSIONS_AUTORISEES
+
+
+@app.route("/api/upload", methods=["POST"])
+def upload():
+    """Reçoit un fichier PDF ou TXT, le sauvegarde, et l'ajoute à la base RAG."""
+    if "fichier" not in request.files:
+        return jsonify({"erreur": "Aucun fichier reçu."}), 400
+
+    fichier = request.files["fichier"]
+
+    if fichier.filename == "":
+        return jsonify({"erreur": "Nom de fichier vide."}), 400
+
+    if not extension_autorisee(fichier.filename):
+        return jsonify({"erreur": "Seuls les fichiers .pdf et .txt sont acceptés."}), 400
+
+    nom_securise = secure_filename(fichier.filename)
+    chemin_sauvegarde = os.path.join(UPLOAD_DIR, nom_securise)
+    fichier.save(chemin_sauvegarde)
+
+    nombre_chunks = ajouter_document(chemin_sauvegarde)
+
+    return jsonify({
+        "message": f"Fichier '{nom_securise}' ajouté avec succès.",
+        "chunks_ajoutes": nombre_chunks
+    })
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
