@@ -16,11 +16,12 @@ def repondre_avec_rag(question):
     """Cherche le contexte pertinent dans les documents, puis demande à Gemini de répondre en se basant sur ce contexte."""
     contexte = rechercher_contexte(question, k=3)
 
-    prompt = f"""Tu es un assistant qui répond aux questions en te basant UNIQUEMENT sur le contexte fourni ci-dessous.
-Si la réponse ne se trouve pas dans le contexte, dis clairement que tu ne sais pas, ne l'invente pas.
+    prompt = f"""Tu es un assistant utile. Voici un contexte qui peut t'aider si la question s'y rapporte :
 
 CONTEXTE :
 {contexte}
+Si la question concerne ce contexte, base ta réponse UNIQUEMENT sur les informations qu'il contient, et dis clairement si une information demandée n'y figure pas.
+Si la question n'a rien à voir avec ce contexte (salutations, question générale, conversation libre), réponds normalement avec tes connaissances générales, sans mentionner le contexte.
 
 QUESTION :
 {question}
