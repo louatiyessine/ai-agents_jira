@@ -43,70 +43,97 @@
   }
   #zoneSaisie > * { max-width: 720px; margin: 0 auto; }
 
-  #modeBar { position: relative; margin-bottom: 8px; max-width: 720px; margin-left: auto; margin-right: auto; }
-  #modeButton {
+  #ligneInput {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
     background: var(--surface);
     border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 8px;
+  }
+  #ligneInput:focus-within { border-color: var(--accent-dim); }
+
+  #plusBtn {
+    background: transparent;
+    border: 1px solid var(--border);
     color: var(--text);
-    padding: 10px 14px;
-    border-radius: 8px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    font-size: 18px;
     cursor: pointer;
+    flex-shrink: 0;
+  }
+  #plusBtn:hover { border-color: var(--accent-dim); }
+
+  textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
     font-size: 14px;
+    resize: none;
+    padding: 8px 4px;
+    max-height: 120px;
+  }
+  textarea:focus { outline: none; }
+
+  #modeBar { position: relative; flex-shrink: 0; }
+  #modeButton {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 4px;
+    white-space: nowrap;
   }
   #modeButton:hover { border-color: var(--accent-dim); }
   #modeMenu {
     display: none;
     position: absolute;
     bottom: 100%;
-    left: 0;
     right: 0;
+    width: 220px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 8px;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
     overflow: hidden;
+    z-index: 10;
   }
   #modeMenu.open { display: block; }
-  .mode-option { padding: 10px 14px; cursor: pointer; font-size: 14px; }
+  .mode-option { padding: 10px 14px; cursor: pointer; font-size: 13px; }
   .mode-option:hover { background: var(--accent-dim); }
-  .mode-option .desc { color: var(--text-dim); font-size: 12px; }
-
-  select#agentSelect {
-    width: 100%; background: var(--surface); color: var(--text);
-    border: 1px solid var(--border); border-radius: 8px;
-    padding: 10px; margin-bottom: 8px; font-size: 14px;
-    display: block; max-width: 720px; margin-left: auto; margin-right: auto;
-  }
-
-  textarea {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 8px;
-    padding: 12px;
-    font-size: 14px;
-    resize: vertical;
-    margin-bottom: 8px;
-    display: block;
-  }
-  textarea:focus { outline: none; border-color: var(--accent-dim); }
+  .mode-option .desc { color: var(--text-dim); font-size: 11px; }
 
   button#sendBtn {
     background: var(--accent);
     color: #052b0f;
     border: none;
-    padding: 10px 18px;
-    border-radius: 8px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
   }
   button#sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  select#agentSelect {
+    width: auto;
+    background: transparent;
+    color: var(--text-dim);
+    border: none;
+    font-size: 12px;
+    margin-top: 6px;
+    padding: 2px;
+  }
+  #fichierNom { font-size: 11px; color: var(--text-dim); margin-left: 8px; }
 
   .message {
     background: var(--surface);
@@ -125,24 +152,41 @@
 
 <div id="resultats"></div>
 
+
 <div id="zoneSaisie">
-  <div id="modeBar">
-    <div id="modeButton" onclick="toggleMenu()">
-      <span id="modeLabel">Demander à un agent</span>
-      <span>▾</span>
+  <div id="ligneInput">
+    <button id="plusBtn" onclick="document.getElementById('fichierInput').click()">+</button>
+    <input type="file" id="fichierInput" accept=".pdf,.txt" style="display:none;" onchange="televerserFichier()">
+
+    <textarea id="question" rows="1" placeholder="Pose ta question..."></textarea>
+
+    <div id="modeBar">
+      <div id="modeButton" onclick="toggleMenu()">
+        <span id="modeLabel">Agent</span>
+        <span>▾</span>
+      </div>
+      <div id="modeMenu">
+        <div class="mode-option" onclick="choisirMode('chat')">
+          Demander à un agent<br><span class="desc">Une seule réponse, agent au choix</span>
+        </div>
+        <div class="mode-option" onclick="choisirMode('compare')">
+          Comparer les deux agents<br><span class="desc">Même question, deux réponses côte à côte</span>
+        </div>
+        <div class="mode-option" onclick="choisirMode('dialogue')">
+          Dialogue entre agents<br><span class="desc">Les deux agents discutent entre eux</span>
+        </div>
+      </div>
     </div>
-    <div id="modeMenu">
-      <div class="mode-option" onclick="choisirMode('chat')">
-        Demander à un agent<br><span class="desc">Une seule réponse, agent au choix</span>
-      </div>
-      <div class="mode-option" onclick="choisirMode('compare')">
-        Comparer les deux agents<br><span class="desc">Même question, deux réponses côte à côte</span>
-      </div>
-      <div class="mode-option" onclick="choisirMode('dialogue')">
-        Dialogue entre agents<br><span class="desc">Les deux agents discutent entre eux</span>
-      </div>
-    </div>
+
+    <button id="sendBtn" onclick="envoyer()">↑</button>
   </div>
+
+  <select id="agentSelect">
+    <option value="gemini">Agent 1 — Gemini (RAG)</option>
+    <option value="llama">Agent 2 — Llama (sans RAG)</option>
+  </select>
+  <span id="fichierNom"></span>
+</div>
 
   <select id="agentSelect">
     <option value="gemini">Agent 1 — Gemini (RAG)</option>
@@ -165,14 +209,10 @@ function toggleMenu() {
 
 function choisirMode(m) {
   mode = m;
-  const labels = {
-    chat: "Demander à un agent",
-    compare: "Comparer les deux agents",
-    dialogue: "Dialogue entre agents"
-  };
-  document.getElementById("modeLabel").textContent = labels[m];
+  const labelsCourts = { chat: "Agent", compare: "Comparer", dialogue: "Dialogue" };
+  document.getElementById("modeLabel").textContent = labelsCourts[m];
   document.getElementById("modeMenu").classList.remove("open");
-  document.getElementById("agentSelect").style.display = (m === "chat") ? "block" : "none";
+  document.getElementById("agentSelect").style.display = (m === "chat") ? "inline-block" : "none";
 }
 async function televerserFichier() {
   const input = document.getElementById("fichierInput");
