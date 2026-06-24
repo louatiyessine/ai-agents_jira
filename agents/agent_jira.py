@@ -4,7 +4,8 @@ from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
 
 load_dotenv()
-
+AGENT1_API_KEY = os.getenv("AGENT1_API_KEY")
+AGENT2_API_KEY = os.getenv("AGENT2_API_KEY")
 JIRA_DOMAIN = os.getenv("JIRA_DOMAIN")
 JIRA_EMAIL = os.getenv("JIRA_EMAIL")
 JIRA_API_TOKEN = os.getenv("JIRA_API_TOKEN")
@@ -91,15 +92,21 @@ Description : {ticket['description']}
 
     return en_tete + "\n" + instruction, intention
 def envoyer_a_agent(prompt, agent_cible="gemini", base_url="http://127.0.0.1:5000"):
-    """Envoie le prompt construit à l'agent choisi, via son API dédiée."""
+    """Envoie le prompt construit à l'agent choisi, via son API dédiée, avec la clé API correspondante."""
     if agent_cible == "gemini":
         url = f"{base_url}/api/agent1/chat"
+        cle_api = AGENT1_API_KEY
     elif agent_cible == "llama":
         url = f"{base_url}/api/agent2/chat"
+        cle_api = AGENT2_API_KEY
     else:
         raise ValueError(f"Agent cible inconnu : {agent_cible}. Utilisez 'gemini' ou 'llama'.")
 
-    reponse = requests.post(url, json={"question": prompt})
+    reponse = requests.post(
+        url,
+        json={"question": prompt},
+        headers={"X-API-Key": cle_api}
+    )
 
     if reponse.status_code != 200:
         raise ValueError(f"Erreur lors de l'appel à l'agent {agent_cible}. Code : {reponse.status_code}")
