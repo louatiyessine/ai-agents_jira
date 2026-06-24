@@ -36,6 +36,30 @@ def chat():
         return jsonify({"erreur": f"Agent inconnu : {agent_choisi}. Utilisez 'gemini' ou 'llama'."}), 400
 
     return jsonify(resultat)
+@app.route("/api/agent1/chat", methods=["POST"])
+def agent1_chat():
+    """API dédiée à l'Agent 1 (Gemini + RAG). Utilisable depuis n'importe quel projet externe."""
+    donnees = request.get_json()
+    question = donnees.get("question")
+
+    if not question:
+        return jsonify({"erreur": "Le champ 'question' est requis."}), 400
+
+    resultat = repondre_avec_rag(question)
+    return jsonify(resultat)
+
+
+@app.route("/api/agent2/chat", methods=["POST"])
+def agent2_chat():
+    """API dédiée à l'Agent 2 (Llama, sans RAG). Utilisable depuis n'importe quel projet externe."""
+    donnees = request.get_json()
+    question = donnees.get("question")
+
+    if not question:
+        return jsonify({"erreur": "Le champ 'question' est requis."}), 400
+
+    resultat = repondre_sans_rag(question)
+    return jsonify(resultat)
 @app.route("/api/dialogue", methods=["POST"])
 def dialogue():
     """Lance un dialogue entre Agent 1 et Agent 2 sur un sujet donné."""
@@ -94,4 +118,4 @@ def upload():
         "chunks_ajoutes": nombre_chunks
     })
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", debug=True, port=5000)
