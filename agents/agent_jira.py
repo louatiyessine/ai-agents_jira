@@ -56,3 +56,37 @@ def extraire_texte_description(description_brute):
 
     parcourir(description_brute)
     return " ".join(morceaux_texte)
+def analyser_intention(ticket):
+    """Détermine l'intention du ticket (corriger un bug, générer du code, ou analyse générale)."""
+    texte_complet = (ticket["titre"] + " " + ticket["description"]).lower()
+
+    mots_cles_bug = ["bug", "erreur", "corriger", "ne fonctionne pas", "problème", "fix"]
+    mots_cles_generation = ["créer", "générer", "ajouter une fonctionnalité", "implémenter", "nouveau"]
+
+    if ticket["type"].lower() == "bug" or any(mot in texte_complet for mot in mots_cles_bug):
+        return "correction_bug"
+    elif any(mot in texte_complet for mot in mots_cles_generation):
+        return "generation_code"
+    else:
+        return "analyse_generale"
+
+
+def construire_prompt(ticket):
+    """Construit un prompt adapté à l'intention détectée dans le ticket."""
+    intention = analyser_intention(ticket)
+
+    en_tete = f"""Ticket Jira : {ticket['cle']}
+Titre : {ticket['titre']}
+Type : {ticket['type']}
+Statut : {ticket['statut']}
+Description : {ticket['description']}
+"""
+
+    if intention == "correction_bug":
+        instruction = """Ce ticket décrit un bug. Analyse la description ci-dessus et propose une explication claire du problème probable, ainsi qu'une suggestion concrète de correction (avec un exemple de code si pertinent)."""
+    elif intention == "generation_code":
+        instruction = """Ce ticket demande la création d'une nouvelle fonctionnalité ou de nouveau code. Analyse la description ci-dessus et génère le code correspondant, avec une brève explication de ton approche."""
+    else:
+        instruction = """Analyse ce ticket et résume ce qui est demandé, avec une suggestion sur la façon de procéder."""
+
+    return en_tete + "\n" + instruction, intention
