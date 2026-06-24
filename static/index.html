@@ -1,304 +1,446 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>AI Agents - Démo</title>
-<style>
-  :root {
-    --bg: #0d0f0d;
-    --surface: #161916;
-    --border: #2a2f2a;
-    --text: #d9f2d9;
-    --text-dim: #7a9c7a;
-    --accent: #3ecf6e;
-    --accent-dim: #1f6b3a;
-  }
-  * { box-sizing: border-box; }
-  body {
-    font-family: -apple-system, Segoe UI, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    margin: 0;
-    padding: 0;
-  }
-  h1 {
-    font-size: 18px; font-weight: 500; color: var(--accent);
-    max-width: 720px; margin: 0 auto; padding: 24px 16px 8px;
-  }
+  <head>
+    <meta charset="UTF-8" />
+    <title>AI Agents - Démo</title>
+    <style>
+      :root {
+        --bg: #0d0f0d;
+        --surface: #161916;
+        --border: #2a2f2a;
+        --text: #d9f2d9;
+        --text-dim: #7a9c7a;
+        --accent: #3ecf6e;
+        --accent-dim: #1f6b3a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system,
+          Segoe UI,
+          Arial,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        padding: 0;
+      }
+      h1 {
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--accent);
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 16px 8px;
+      }
 
-  #resultats {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 0 16px 220px;
-    display: flex;
-    flex-direction: column-reverse;
-  }
+      #resultats {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 0 16px 220px;
+        display: flex;
+        flex-direction: column-reverse;
+      }
 
-  #zoneSaisie {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    padding: 14px 16px;
-  }
-  #zoneSaisie > * { max-width: 720px; margin: 0 auto; }
+      #zoneSaisie {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--bg);
+        border-top: 1px solid var(--border);
+        padding: 14px 16px;
+      }
+      #zoneSaisie > * {
+        max-width: 720px;
+        margin: 0 auto;
+      }
 
-  #ligneInput {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 8px;
-  }
-  #ligneInput:focus-within { border-color: var(--accent-dim); }
+      #ligneInput {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 8px;
+      }
+      #ligneInput:focus-within {
+        border-color: var(--accent-dim);
+      }
 
-  #plusBtn {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    font-size: 18px;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  #plusBtn:hover { border-color: var(--accent-dim); }
+      #plusBtn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        font-size: 18px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      #plusBtn:hover {
+        border-color: var(--accent-dim);
+      }
 
-  textarea {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--text);
-    font-size: 14px;
-    resize: none;
-    padding: 8px 4px;
-    max-height: 120px;
-  }
-  textarea:focus { outline: none; }
+      textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text);
+        font-size: 14px;
+        resize: none;
+        padding: 8px 4px;
+        max-height: 120px;
+      }
+      textarea:focus {
+        outline: none;
+      }
 
-  #modeBar { position: relative; flex-shrink: 0; }
-  #modeButton {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 8px 10px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-  }
-  #modeButton:hover { border-color: var(--accent-dim); }
-  #modeMenu {
-    display: none;
-    position: absolute;
-    bottom: 100%;
-    right: 0;
-    width: 220px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    margin-bottom: 8px;
-    overflow: hidden;
-    z-index: 10;
-  }
-  #modeMenu.open { display: block; }
-  .mode-option { padding: 10px 14px; cursor: pointer; font-size: 13px; }
-  .mode-option:hover { background: var(--accent-dim); }
-  .mode-option .desc { color: var(--text-dim); font-size: 11px; }
+      #modeBar {
+        position: relative;
+        flex-shrink: 0;
+      }
+      #modeButton {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 8px 10px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+      }
+      #modeButton:hover {
+        border-color: var(--accent-dim);
+      }
+      #modeMenu {
+        display: none;
+        position: absolute;
+        bottom: 100%;
+        right: 0;
+        width: 220px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        overflow: hidden;
+        z-index: 10;
+      }
+      #modeMenu.open {
+        display: block;
+      }
+      .mode-option {
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .mode-option:hover {
+        background: var(--accent-dim);
+      }
+      .mode-option .desc {
+        color: var(--text-dim);
+        font-size: 11px;
+      }
 
-  button#sendBtn {
-    background: var(--accent);
-    color: #052b0f;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    flex-shrink: 0;
-  }
-  button#sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+      button#sendBtn {
+        background: var(--accent);
+        color: #052b0f;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        flex-shrink: 0;
+      }
+      button#sendBtn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
 
-  select#agentSelect {
-    width: auto;
-    background: transparent;
-    color: var(--text-dim);
-    border: none;
-    font-size: 12px;
-    margin-top: 6px;
-    padding: 2px;
-  }
-  #fichierNom { font-size: 11px; color: var(--text-dim); margin-left: 8px; }
+      select#agentSelect {
+        width: auto;
+        background: transparent;
+        color: var(--text-dim);
+        border: none;
+        font-size: 12px;
+        margin-top: 6px;
+        padding: 2px;
+      }
+      #fichierNom {
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-left: 8px;
+      }
 
-  .message {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 14px;
-    margin-top: 12px;
-  }
-  .message.gemini { border-left: 3px solid var(--accent); }
-  .message.llama { border-left: 3px solid #d99b3e; }
-  .agent-label { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
-  .meta { font-size: 11px; color: var(--text-dim); margin-top: 6px; font-family: monospace; }
-</style>
-</head>
-<body>
+      .message {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin-top: 12px;
+      }
+      .message.gemini {
+        border-left: 3px solid var(--accent);
+      }
+      .message.llama {
+        border-left: 3px solid #d99b3e;
+      }
+      .agent-label {
+        font-size: 12px;
+        color: var(--text-dim);
+        margin-bottom: 4px;
+      }
+      .meta {
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-top: 6px;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Démo Agents IA</h1>
 
-<h1>Démo Agents IA</h1>
+    <div id="resultats"></div>
 
-<div id="resultats"></div>
+    <div id="zoneSaisie">
+      <div id="ligneInput">
+        <button
+          id="plusBtn"
+          onclick="document.getElementById('fichierInput').click()"
+        >
+          +
+        </button>
+        <input
+          type="file"
+          id="fichierInput"
+          accept=".pdf,.txt"
+          style="display: none"
+          onchange="televerserFichier()"
+        />
 
-<div id="zoneSaisie">
-  <div id="ligneInput">
-    <button id="plusBtn" onclick="document.getElementById('fichierInput').click()">+</button>
-    <input type="file" id="fichierInput" accept=".pdf,.txt" style="display:none;" onchange="televerserFichier()">
+        <textarea
+          id="question"
+          rows="1"
+          placeholder="Pose ta question..."
+        ></textarea>
 
-    <textarea id="question" rows="1" placeholder="Pose ta question..."></textarea>
+        <div id="modeBar">
+          <div id="modeButton" onclick="toggleMenu()">
+            <span id="modeLabel">Agent</span>
+            <span>▾</span>
+          </div>
+          <div id="modeMenu">
+            <div class="mode-option" onclick="choisirMode('chat')">
+              Demander à un agent<br /><span class="desc"
+                >Une seule réponse, agent au choix</span
+              >
+            </div>
+            <div class="mode-option" onclick="choisirMode('compare')">
+              Comparer les deux agents<br /><span class="desc"
+                >Même question, deux réponses côte à côte</span
+              >
+            </div>
+            <div class="mode-option" onclick="choisirMode('dialogue')">
+              Dialogue entre agents<br /><span class="desc"
+                >Les deux agents discutent entre eux</span
+              >
+            </div>
+            <div class="mode-option" onclick="choisirMode('jira')">
+              Agent Jira<br /><span class="desc"
+                >Lit un ticket Jira et l'envoie à un agent</span
+              >
+            </div>
+          </div>
+        </div>
 
-    <div id="modeBar">
-      <div id="modeButton" onclick="toggleMenu()">
-        <span id="modeLabel">Agent</span>
-        <span>▾</span>
+        <button id="sendBtn" onclick="envoyer()">Envoyer</button>
       </div>
-      <div id="modeMenu">
-        <div class="mode-option" onclick="choisirMode('chat')">
-          Demander à un agent<br><span class="desc">Une seule réponse, agent au choix</span>
-        </div>
-        <div class="mode-option" onclick="choisirMode('compare')">
-          Comparer les deux agents<br><span class="desc">Même question, deux réponses côte à côte</span>
-        </div>
-        <div class="mode-option" onclick="choisirMode('dialogue')">
-          Dialogue entre agents<br><span class="desc">Les deux agents discutent entre eux</span>
-        </div>
-      </div>
+
+      <select id="agentSelect">
+        <option value="gemini">Agent 1 — Gemini (RAG)</option>
+        <option value="llama">Agent 2 — Llama (sans RAG)</option>
+        <input
+          type="text"
+          id="cleTicket"
+          placeholder="Clé du ticket (ex: SCRUM-1)"
+          style="
+            display: none;
+            width: 100%;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            margin-top: 6px;
+            font-size: 13px;
+          "
+        />
+      </select>
+      <span id="fichierNom"></span>
     </div>
 
-    <button id="sendBtn" onclick="envoyer()">Envoyer</button>
-  </div>
+    <script>
+      let mode = "chat";
 
-  <select id="agentSelect">
-    <option value="gemini">Agent 1 — Gemini (RAG)</option>
-    <option value="llama">Agent 2 — Llama (sans RAG)</option>
-  </select>
-  <span id="fichierNom"></span>
-</div>
+      function toggleMenu() {
+        document.getElementById("modeMenu").classList.toggle("open");
+      }
 
-<script>
-let mode = "chat";
+      function choisirMode(m) {
+        mode = m;
+        const labelsCourts = {
+          chat: "Agent",
+          compare: "Comparer",
+          dialogue: "Dialogue",
+          jira: "Jira",
+        };
+        document.getElementById("modeLabel").textContent = labelsCourts[m];
+        document.getElementById("modeMenu").classList.remove("open");
+        document.getElementById("agentSelect").style.display =
+          m === "chat" || m === "jira" ? "inline-block" : "none";
+        document.getElementById("cleTicket").style.display =
+          m === "jira" ? "block" : "none";
+        document.getElementById("question").style.display =
+          m === "jira" ? "none" : "block";
+      }
+      async function televerserFichier() {
+        const input = document.getElementById("fichierInput");
+        const fichier = input.files[0];
+        if (!fichier) return;
 
-function toggleMenu() {
-  document.getElementById("modeMenu").classList.toggle("open");
-}
+        document.getElementById("fichierNom").textContent =
+          "Envoi de " + fichier.name + "...";
 
-function choisirMode(m) {
-  mode = m;
-  const labelsCourts = { chat: "Agent", compare: "Comparer", dialogue: "Dialogue" };
-  document.getElementById("modeLabel").textContent = labelsCourts[m];
-  document.getElementById("modeMenu").classList.remove("open");
-  document.getElementById("agentSelect").style.display = (m === "chat") ? "inline-block" : "none";
-}
+        const formData = new FormData();
+        formData.append("fichier", fichier);
 
-async function televerserFichier() {
-  const input = document.getElementById("fichierInput");
-  const fichier = input.files[0];
-  if (!fichier) return;
+        try {
+          const reponse = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await reponse.json();
 
-  document.getElementById("fichierNom").textContent = "Envoi de " + fichier.name + "...";
+          if (!reponse.ok) {
+            throw new Error(data.erreur || "Erreur lors de l'envoi.");
+          }
 
-  const formData = new FormData();
-  formData.append("fichier", fichier);
+          document.getElementById("fichierNom").textContent =
+            fichier.name + " ajouté (" + data.chunks_ajoutes + " segments)";
+        } catch (erreur) {
+          document.getElementById("fichierNom").textContent =
+            "Erreur : " + erreur.message;
+        }
 
-  try {
-    const reponse = await fetch("/api/upload", {
-      method: "POST",
-      body: formData
-    });
-    const data = await reponse.json();
+        input.value = "";
+      }
 
-    if (!reponse.ok) {
-      throw new Error(data.erreur || "Erreur lors de l'envoi.");
-    }
+      async function envoyer() {
+        const question = document.getElementById("question").value.trim();
+        if (!question) return;
 
-    document.getElementById("fichierNom").textContent = fichier.name + " ajouté (" + data.chunks_ajoutes + " segments)";
-  } catch (erreur) {
-    document.getElementById("fichierNom").textContent = "Erreur : " + erreur.message;
-  }
+        const btn = document.getElementById("sendBtn");
+        btn.disabled = true;
+        btn.textContent = "Patientez...";
 
-  input.value = "";
-}
+        try {
+          if (mode === "chat") {
+            const agent = document.getElementById("agentSelect").value;
+            const data = await appelApi("/api/chat", { question, agent });
+            afficherMessage(agent, data.reponse, data.tokens_total);
+          } else if (mode === "compare") {
+            const data = await appelApi("/api/compare", { question });
+            afficherMessage(
+              "gemini",
+              data.agent_1_gemini.reponse,
+              data.agent_1_gemini.tokens_total,
+              data.agent_1_gemini.cout_usd,
+            );
+            afficherMessage(
+              "llama",
+              data.agent_2_llama.reponse,
+              data.agent_2_llama.tokens_total,
+              data.agent_2_llama.cout_si_api_payante_usd,
+            );
+          } else if (mode === "dialogue") {
+            const data = await appelApi("/api/dialogue", {
+              sujet: question,
+              nombre_tours: 2,
+            });
+            data.historique.forEach((entree) => {
+              const agentType = entree.agent.includes("Gemini")
+                ? "gemini"
+                : "llama";
+              afficherMessage(agentType, entree.message, entree.tokens);
+            });
+          }
+          else if (mode === "jira") {
+            const cleTicket = document.getElementById("cleTicket").value.trim();
+            if (!cleTicket) {
+              afficherErreur("Veuillez entrer la clé du ticket Jira.");
+              return;
+            }
+            const data = await appelApi("/api/jira", { cle_ticket: cleTicket });
+            afficherMessage(
+              "gemini",
+              data.reponse,
+              data.tokens_total,
+              data.cout_usd,
+            );
+          }
+        } catch (erreur) {
+          afficherErreur(erreur.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Envoyer";
+        }
+      }
 
-async function envoyer() {
-  const question = document.getElementById("question").value.trim();
-  if (!question) return;
+      async function appelApi(url, corps) {
+        const reponse = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(corps),
+        });
+        if (!reponse.ok) {
+          const erreur = await reponse.json();
+          throw new Error(erreur.erreur || "Erreur serveur");
+        }
+        return reponse.json();
+      }
 
-  const btn = document.getElementById("sendBtn");
-  btn.disabled = true;
-  btn.textContent = "Patientez...";
+      function afficherMessage(agent, texte, tokens, cout) {
+        const div = document.createElement("div");
+        div.className = "message " + agent;
+        let meta = "Tokens: " + tokens;
+        if (cout !== undefined) meta += "  |  Coût: $" + cout;
+        div.innerHTML =
+          '<div class="agent-label">' +
+          (agent === "gemini" ? "Agent 1 — Gemini (RAG)" : "Agent 2 — Llama") +
+          "</div>" +
+          texte +
+          '<div class="meta">' +
+          meta +
+          "</div>";
+        document.getElementById("resultats").prepend(div);
+      }
 
-  try {
-    if (mode === "chat") {
-      const agent = document.getElementById("agentSelect").value;
-      const data = await appelApi("/api/chat", { question, agent });
-      afficherMessage(agent, data.reponse, data.tokens_total);
-
-    } else if (mode === "compare") {
-      const data = await appelApi("/api/compare", { question });
-      afficherMessage("gemini", data.agent_1_gemini.reponse, data.agent_1_gemini.tokens_total, data.agent_1_gemini.cout_usd);
-      afficherMessage("llama", data.agent_2_llama.reponse, data.agent_2_llama.tokens_total, data.agent_2_llama.cout_si_api_payante_usd);
-
-    } else if (mode === "dialogue") {
-      const data = await appelApi("/api/dialogue", { sujet: question, nombre_tours: 2 });
-      data.historique.forEach(entree => {
-        const agentType = entree.agent.includes("Gemini") ? "gemini" : "llama";
-        afficherMessage(agentType, entree.message, entree.tokens);
-      });
-    }
-  } catch (erreur) {
-    afficherErreur(erreur.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Envoyer";
-  }
-}
-
-async function appelApi(url, corps) {
-  const reponse = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(corps)
-  });
-  if (!reponse.ok) {
-    const erreur = await reponse.json();
-    throw new Error(erreur.erreur || "Erreur serveur");
-  }
-  return reponse.json();
-}
-
-function afficherMessage(agent, texte, tokens, cout) {
-  const div = document.createElement("div");
-  div.className = "message " + agent;
-  let meta = "Tokens: " + tokens;
-  if (cout !== undefined) meta += "  |  Coût: $" + cout;
-  div.innerHTML = '<div class="agent-label">' + (agent === "gemini" ? "Agent 1 — Gemini (RAG)" : "Agent 2 — Llama") + '</div>'
-                + texte
-                + '<div class="meta">' + meta + '</div>';
-  document.getElementById("resultats").prepend(div);
-}
-
-function afficherErreur(texte) {
-  const div = document.createElement("div");
-  div.className = "message";
-  div.style.borderLeftColor = "#e24b4a";
-  div.textContent = "Erreur : " + texte;
-  document.getElementById("resultats").prepend(div);
-}
-</script>
-
-</body>
+      function afficherErreur(texte) {
+        const div = document.createElement("div");
+        div.className = "message";
+        div.style.borderLeftColor = "#e24b4a";
+        div.textContent = "Erreur : " + texte;
+        document.getElementById("resultats").prepend(div);
+      }
+    </script>
+  </body>
 </html>

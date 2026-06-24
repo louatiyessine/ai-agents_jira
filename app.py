@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 from rag.rag_engine import ajouter_document
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-
+from agents.agent_jira import traiter_ticket
 sys.path.append(os.path.dirname(__file__))
 
 from agents.agent_gemini import repondre_avec_rag
@@ -117,5 +117,21 @@ def upload():
         "message": f"Fichier '{nom_securise}' ajouté avec succès.",
         "chunks_ajoutes": nombre_chunks
     })
+@app.route("/api/jira", methods=["POST"])
+def jira():
+    """Lit un ticket Jira, analyse son intention, et envoie un prompt construit à l'agent choisi."""
+    donnees = request.get_json()
+    cle_ticket = donnees.get("cle_ticket")
+    agent_cible = donnees.get("agent_cible", "gemini")
+
+    if not cle_ticket:
+        return jsonify({"erreur": "Le champ 'cle_ticket' est requis."}), 400
+
+    try:
+        resultat = traiter_ticket(cle_ticket, agent_cible=agent_cible)
+    except Exception as erreur:
+        return jsonify({"erreur": f"Erreur lors du traitement du ticket : {str(erreur)}"}), 500
+
+    return jsonify(resultat)
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True, port=5000)
