@@ -383,20 +383,15 @@
               afficherMessage(agentType, entree.message, entree.tokens);
             });
           }
-          else if (mode === "jira") {
-            const cleTicket = document.getElementById("cleTicket").value.trim();
-            if (!cleTicket) {
-              afficherErreur("Veuillez entrer la clé du ticket Jira.");
-              return;
-            }
-            const data = await appelApi("/api/jira", { cle_ticket: cleTicket });
-            afficherMessage(
-              "gemini",
-              data.reponse,
-              data.tokens_total,
-              data.cout_usd,
-            );
-          }
+           else if (mode === "jira") {
+  const cleTicket = document.getElementById("cleTicket").value.trim();
+  const agentCible = document.getElementById("agentSelect").value;
+  if (!cleTicket) { afficherErreur("Merci de saisir une clé de ticket."); return; }
+
+  const data = await appelApi("/api/jira", { cle_ticket: cleTicket, agent_cible: agentCible });
+  afficherMessage(agentCible, "[Ticket " + data.ticket.cle + " - " + data.intention_detectee + "]\n\n" + data.reponse_agent, data.tokens_total);
+}
+          
         } catch (erreur) {
           afficherErreur(erreur.message);
         } finally {
