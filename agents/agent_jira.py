@@ -90,3 +90,44 @@ Description : {ticket['description']}
         instruction = """Analyse ce ticket et résume ce qui est demandé, avec une suggestion sur la façon de procéder."""
 
     return en_tete + "\n" + instruction, intention
+def envoyer_a_agent(prompt, agent_cible="gemini", base_url="http://127.0.0.1:5000"):
+    """Envoie le prompt construit à l'agent choisi, via son API dédiée."""
+    if agent_cible == "gemini":
+        url = f"{base_url}/api/agent1/chat"
+    elif agent_cible == "llama":
+        url = f"{base_url}/api/agent2/chat"
+    else:
+        raise ValueError(f"Agent cible inconnu : {agent_cible}. Utilisez 'gemini' ou 'llama'.")
+
+    reponse = requests.post(url, json={"question": prompt})
+
+    if reponse.status_code != 200:
+        raise ValueError(f"Erreur lors de l'appel à l'agent {agent_cible}. Code : {reponse.status_code}")
+
+    return reponse.json()
+def traiter_ticket(cle_ticket, agent_cible="gemini"):
+    """Pipeline complet : lit le ticket, analyse l'intention, construit le prompt, et l'envoie à l'agent choisi."""
+    ticket = lire_ticket(cle_ticket)
+    prompt, intention = construire_prompt(ticket)
+    resultat_agent = envoyer_a_agent(prompt, agent_cible=agent_cible)
+
+    return {
+        "ticket": ticket,
+        "intention_detectee": intention,
+        "agent_utilise": agent_cible,
+        "reponse_agent": resultat_agent["reponse"],
+        "tokens_total": resultat_agent.get("tokens_total", 0),
+    }
+if __name__ == "__main__":
+    resultat = traiter_ticket("SCRUM-1", agent_cible="gemini")
+
+    print("=== TICKET ===")
+    print(resultat["ticket"]["titre"])
+    print()
+    print("=== INTENTION DÉTECTÉE ===")
+    print(resultat["intention_detectee"])
+    print()
+    print("=== RÉPONSE DE L'AGENT ===")
+    print(resultat["reponse_agent"])
+    print()
+    print("Tokens utilisés :", resultat["tokens_total"])
