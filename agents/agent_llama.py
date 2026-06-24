@@ -2,13 +2,18 @@ import ollama
 
 MODEL_NAME = "llama3.2"
 def repondre_sans_rag(question):
-    """Envoie directement la question à Llama 3.2, sans RAG, sans contexte documentaire."""
-    reponse = ollama.chat(
-        model=MODEL_NAME,
-        messages=[
-            {"role": "user", "content": question}
-        ]
-    )
+    try:
+        reponse = ollama.chat(
+            model=MODEL_NAME,
+            messages=[{"role": "user", "content": question}]
+        )
+    except Exception as erreur:
+        return {
+            "reponse": "Le service Llama (Ollama) est indisponible. Vérifiez qu'Ollama tourne bien sur votre machine.",
+            "tokens_entree": 0,
+            "tokens_sortie": 0,
+            "tokens_total": 0,
+        }
 
     tokens_entree = reponse["prompt_eval_count"]
     tokens_sortie = reponse["eval_count"]

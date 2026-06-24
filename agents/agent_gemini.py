@@ -13,25 +13,33 @@ MODEL_NAME = "gemini-2.5-flash"
 
 
 def repondre_avec_rag(question):
-    """Cherche le contexte pertinent dans les documents, puis demande à Gemini de répondre en se basant sur ce contexte."""
     contexte = rechercher_contexte(question, k=3)
 
     prompt = f"""Tu es un assistant utile. Voici un contexte qui peut t'aider si la question s'y rapporte :
 
 CONTEXTE :
 {contexte}
-Si la question concerne ce contexte, base ta réponse UNIQUEMENT sur les informations qu'il contient, et dis clairement si une information demandée n'y figure pas.
-Si la question n'a rien à voir avec ce contexte (salutations, question générale, conversation libre), réponds normalement avec tes connaissances générales, sans mentionner le contexte.
+
+Si la question concerne ce contexte, base ta réponse UNIQUEMENT sur les informations qu'il contient, et dis clairement si une information demandée n'y figure pas. Si la question n'a rien à voir avec ce contexte (salutations, question générale, conversation libre), réponds normalement avec tes connaissances générales, sans mentionner le contexte.
 
 QUESTION :
 {question}
 
 RÉPONSE :"""
 
-    reponse = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt
-    )
+    try:
+        reponse = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt
+        )
+    except Exception as erreur:
+        return {
+            "reponse": "Le service Gemini est temporairement surchargé. Merci de réessayer dans quelques secondes.",
+            "tokens_entree": 0,
+            "tokens_sortie": 0,
+            "tokens_reflexion": 0,
+            "tokens_total": 0,
+        }
 
     usage = reponse.usage_metadata
 
@@ -42,7 +50,6 @@ RÉPONSE :"""
         "tokens_reflexion": usage.thoughts_token_count or 0,
         "tokens_total": usage.total_token_count,
     }
-
 
 if __name__ == "__main__":
     question_test = "Combien de jours de congés ai-je par an ?"
