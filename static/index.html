@@ -268,7 +268,10 @@
       <select id="agentSelect">
         <option value="gemini">Agent 1 — Gemini (RAG)</option>
         <option value="llama">Agent 2 — Llama (sans RAG)</option>
-        <input
+        
+        />
+      </select>
+      <input
           type="text"
           id="cleTicket"
           placeholder="Clé du ticket (ex: SCRUM-1)"
@@ -283,8 +286,6 @@
             margin-top: 6px;
             font-size: 13px;
           "
-        />
-      </select>
       <span id="fichierNom"></span>
     </div>
 
@@ -345,8 +346,10 @@
       }
 
       async function envoyer() {
-        const question = document.getElementById("question").value.trim();
-        if (!question) return;
+       const question = document.getElementById("question").value.trim();
+  const cleTicket = document.getElementById("cleTicket").value.trim();
+  if (mode !== "jira" && !question) return;
+  if (mode === "jira" && !cleTicket) { afficherErreur("Merci de saisir une clé de ticket."); return; }
 
         const btn = document.getElementById("sendBtn");
         btn.disabled = true;
