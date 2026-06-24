@@ -14,6 +14,13 @@ from utils.cost_calculator import generer_rapport_comparaison
 
 app = Flask(__name__, static_folder="static")
 CORS(app)
+AGENT1_API_KEY = os.getenv("AGENT1_API_KEY")
+AGENT2_API_KEY = os.getenv("AGENT2_API_KEY")
+
+
+def cle_valide(cle_recue, cle_attendue):
+    """Vérifie que la clé API fournie correspond à la clé attendue pour cet agent."""
+    return cle_recue is not None and cle_recue == cle_attendue
 @app.route("/")
 def accueil():
     """Sert la page principale du chatbot."""
@@ -38,7 +45,11 @@ def chat():
     return jsonify(resultat)
 @app.route("/api/agent1/chat", methods=["POST"])
 def agent1_chat():
-    """API dédiée à l'Agent 1 (Gemini + RAG). Utilisable depuis n'importe quel projet externe."""
+    """API dédiée à l'Agent 1 (Gemini + RAG). Nécessite une clé API valide."""
+    cle_fournie = request.headers.get("X-API-Key")
+    if not cle_valide(cle_fournie, AGENT1_API_KEY):
+        return jsonify({"erreur": "Clé API invalide ou manquante pour l'Agent 1."}), 401
+
     donnees = request.get_json()
     question = donnees.get("question")
 
@@ -51,7 +62,11 @@ def agent1_chat():
 
 @app.route("/api/agent2/chat", methods=["POST"])
 def agent2_chat():
-    """API dédiée à l'Agent 2 (Llama, sans RAG). Utilisable depuis n'importe quel projet externe."""
+    """API dédiée à l'Agent 2 (Llama, sans RAG). Nécessite une clé API valide."""
+    cle_fournie = request.headers.get("X-API-Key")
+    if not cle_valide(cle_fournie, AGENT2_API_KEY):
+        return jsonify({"erreur": "Clé API invalide ou manquante pour l'Agent 2."}), 401
+
     donnees = request.get_json()
     question = donnees.get("question")
 
