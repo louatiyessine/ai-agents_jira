@@ -3,8 +3,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from agents.agent_gemini import repondre_avec_rag
-from agents.agent_llama import repondre_sans_rag
+from utils.agent_client import appeler_agent_interne
 def lancer_dialogue(sujet, nombre_tours=3):
     """Fait dialoguer Agent 1 (Gemini+RAG) et Agent 2 (Llama, sans RAG) sur un sujet donné."""
     historique = []
@@ -16,7 +15,7 @@ def lancer_dialogue(sujet, nombre_tours=3):
     message_actuel = sujet
 
     for tour in range(nombre_tours):
-        resultat_gemini = repondre_avec_rag(message_actuel)
+        resultat_gemini = appeler_agent_interne("gemini", message_actuel)
         historique.append({
             "tour": tour + 1,
             "agent": "Agent 1 (Gemini + RAG)",
@@ -27,7 +26,7 @@ def lancer_dialogue(sujet, nombre_tours=3):
 
         message_actuel = resultat_gemini["reponse"]
 
-        resultat_llama = repondre_sans_rag(message_actuel)
+        resultat_llama = appeler_agent_interne("llama", message_actuel)
         historique.append({
             "tour": tour + 1,
             "agent": "Agent 2 (Llama, sans RAG)",
