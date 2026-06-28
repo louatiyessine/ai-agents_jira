@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from agents.agent_jira import traiter_ticket
 sys.path.append(os.path.dirname(__file__))
-
+import requests
 from agents.agent_gemini import repondre_avec_rag
 from agents.agent_llama import repondre_sans_rag
 from agents.dialogue import lancer_dialogue
@@ -17,7 +17,26 @@ CORS(app)
 AGENT1_API_KEY = os.getenv("AGENT1_API_KEY")
 AGENT2_API_KEY = os.getenv("AGENT2_API_KEY")
 
+BASE_URL_INTERNE = "http://127.0.0.1:5000"
 
+
+def appeler_agent_interne(agent_cible, question):
+    """Tout appel à un agent, même venant de ce serveur, passe par son API officielle et sa clé."""
+    if agent_cible == "gemini":
+        url = f"{BASE_URL_INTERNE}/api/agent1/chat"
+        cle = AGENT1_API_KEY
+    elif agent_cible == "llama":
+        url = f"{BASE_URL_INTERNE}/api/agent2/chat"
+        cle = AGENT2_API_KEY
+    else:
+        raise ValueError(f"Agent inconnu : {agent_cible}")
+
+    reponse = requests.post(
+        url,
+        json={"question": question},
+        headers={"X-API-Key": cle}
+    )
+    return reponse.json()
 def cle_valide(cle_recue, cle_attendue):
     """Vérifie que la clé API fournie correspond à la clé attendue pour cet agent."""
     return cle_recue is not None and cle_recue == cle_attendue
@@ -27,7 +46,7 @@ def accueil():
     return send_from_directory("static", "index.html")
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    """Reçoit une question et l'envoie à l'agent choisi (gemini ou llama)."""
+    """Reçoit une question et la transmet à l'agent choisi via son API officielle."""
     donnees = request.get_json()
     question = donnees.get("question")
     agent_choisi = donnees.get("agent", "gemini")
@@ -35,13 +54,10 @@ def chat():
     if not question:
         return jsonify({"erreur": "Le champ 'question' est requis."}), 400
 
-    if agent_choisi == "gemini":
-        resultat = repondre_avec_rag(question)
-    elif agent_choisi == "llama":
-        resultat = repondre_sans_rag(question)
-    else:
+    if agent_choisi not in ("gemini", "llama"):
         return jsonify({"erreur": f"Agent inconnu : {agent_choisi}. Utilisez 'gemini' ou 'llama'."}), 400
 
+    resultat = appeler_agent_interne(agent_choisi, question)
     return jsonify(resultat)
 @app.route("/api/agent1/chat", methods=["POST"])
 def agent1_chat():
@@ -89,15 +105,15 @@ def dialogue():
     return jsonify(resultat)
 @app.route("/api/compare", methods=["POST"])
 def compare():
-    """Envoie la même question aux deux agents et retourne un rapport de comparaison complet."""
+    """Envoie la même question aux deux agents (via leur API officielle) et retourne un rapport de comparaison."""
     donnees = request.get_json()
     question = donnees.get("question")
 
     if not question:
         return jsonify({"erreur": "Le champ 'question' est requis."}), 400
 
-    resultat_gemini = repondre_avec_rag(question)
-    resultat_llama = repondre_sans_rag(question)
+    resultat_gemini = appeler_agent_interne("gemini", question)
+    resultat_llama = appeler_agent_interne("llama", question)
 
     rapport = generer_rapport_comparaison(resultat_gemini, resultat_llama, question)
     return jsonify(rapport)
