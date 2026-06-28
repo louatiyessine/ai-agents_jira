@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from agents.agent_jira import traiter_ticket
 sys.path.append(os.path.dirname(__file__))
-import requests
+from utils.agent_client import appeler_agent_interne
 from agents.agent_gemini import repondre_avec_rag
 from agents.agent_llama import repondre_sans_rag
 from agents.dialogue import lancer_dialogue
@@ -17,26 +17,7 @@ CORS(app)
 AGENT1_API_KEY = os.getenv("AGENT1_API_KEY")
 AGENT2_API_KEY = os.getenv("AGENT2_API_KEY")
 
-BASE_URL_INTERNE = "http://127.0.0.1:5000"
 
-
-def appeler_agent_interne(agent_cible, question):
-    """Tout appel à un agent, même venant de ce serveur, passe par son API officielle et sa clé."""
-    if agent_cible == "gemini":
-        url = f"{BASE_URL_INTERNE}/api/agent1/chat"
-        cle = AGENT1_API_KEY
-    elif agent_cible == "llama":
-        url = f"{BASE_URL_INTERNE}/api/agent2/chat"
-        cle = AGENT2_API_KEY
-    else:
-        raise ValueError(f"Agent inconnu : {agent_cible}")
-
-    reponse = requests.post(
-        url,
-        json={"question": question},
-        headers={"X-API-Key": cle}
-    )
-    return reponse.json()
 def cle_valide(cle_recue, cle_attendue):
     """Vérifie que la clé API fournie correspond à la clé attendue pour cet agent."""
     return cle_recue is not None and cle_recue == cle_attendue
