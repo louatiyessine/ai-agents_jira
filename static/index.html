@@ -179,6 +179,27 @@
         color: var(--text-dim);
         margin-left: 8px;
       }
+      .message pre {
+  background: #0d1a0d;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.message code {
+  font-family: Consolas, monospace;
+  font-size: 13px;
+  color: #7effa0;
+}
+.message pre code {
+  background: none;
+  padding: 0;
+}
+.message p { margin: 6px 0; }
+.message h3 { color: var(--accent); margin: 10px 0 4px; }
+.message strong { color: var(--accent); }
+.message ol, .message ul { padding-left: 20px; margin: 6px 0; }
 
       .message {
         background: var(--surface);
@@ -205,6 +226,7 @@
         font-family: monospace;
       }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script> 
   </head>
   <body>
     <h1>Démo Agents IA</h1>
@@ -417,26 +439,30 @@
       }
 
       function afficherMessage(agent, texte, tokens, cout) {
-        const div = document.createElement("div");
-        div.className = "message " + agent;
-        let meta = "Tokens: " + tokens;
-        if (cout !== undefined) meta += "  |  Coût: $" + cout;
-        div.innerHTML =
-          '<div class="agent-label">' +
-          (agent === "gemini" ? "Agent 1 — Gemini (RAG)" : "Agent 2 — Llama") +
-          "</div>" +
-          texte +
-          '<div class="meta">' +
-          meta +
-          "</div>";
-        document.getElementById("resultats").prepend(div);
-      }
+  const div = document.createElement("div");
+  div.className = "message " + agent;
+  let meta = "Tokens: " + tokens;
+  if (cout !== undefined) meta += "  |  Coût: $" + cout;
+
+  const texteHtml = marked.parse(texte);
+
+  div.innerHTML =
+    '<div class="agent-label">' +
+    (agent === "gemini" ? "Agent 1 — Gemini (RAG)" : "Agent 2 — Llama") +
+    "</div>" +
+    texteHtml +
+    '<div class="meta">' +
+    meta +
+    "</div>";
+  document.getElementById("resultats").prepend(div);
+}
 
       function afficherErreur(texte) {
         const div = document.createElement("div");
         div.className = "message";
         div.style.borderLeftColor = "#e24b4a";
-        div.textContent = "Erreur : " + texte;
+        const texteHtml = marked.parse("Erreur : " + texte);
+        div.innerHTML = texteHtml;
         document.getElementById("resultats").prepend(div);
       }
     </script>
