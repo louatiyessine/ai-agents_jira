@@ -169,9 +169,9 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
             )
 
             labels = {
-                "correction_bug":   "🐛 Correction de bug",
-                "generation_code":  "🏗️ Génération de code",
-                "analyse_generale": "📋 Analyse générale"
+                "correction_bug":   " Correction de bug",
+                "generation_code":  " Génération de code",
+                "analyse_generale": " Analyse générale"
             }
 
             texte = f"""## Résolution du ticket {resultat['ticket']['cle']}
