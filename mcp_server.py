@@ -143,9 +143,9 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
 
             # Traduction lisible de l'intention
             labels = {
-                "correction_bug":   "🐛 Correction de bug",
-                "generation_code":  "🏗️ Génération de code / nouvelle feature",
-                "analyse_generale": "📋 Analyse générale"
+                "correction_bug":   " Correction de bug",
+                "generation_code":  " Génération de code / nouvelle feature",
+                "analyse_generale": " Analyse générale"
             }
 
             texte = f"""## Analyse du ticket {ticket['cle']}
