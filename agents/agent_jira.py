@@ -73,10 +73,13 @@ def analyser_intention(ticket):
 
 
 def construire_prompt(ticket):
-    """Construit un prompt adapté à l'intention détectée dans le ticket."""
+    """Construit un prompt ingénieur senior adapté à l'intention détectée dans le ticket."""
     intention = analyser_intention(ticket)
+    # lezem llm yraja3 prompt "propmtToDevolopAgent" this will be sent to the gemimi agent
+    # donc prompt hedhi lezemha tetbaddel bech trajja3 "propmtToDevolopAgent"  
+    en_tete = f"""Tu es un ingénieur senior avec plus de 10 ans d'expérience en développement logiciel. On te confie le ticket Jira suivant :
 
-    en_tete = f"""Ticket Jira : {ticket['cle']}
+Ticket : {ticket['cle']}
 Titre : {ticket['titre']}
 Type : {ticket['type']}
 Statut : {ticket['statut']}
@@ -84,13 +87,51 @@ Description : {ticket['description']}
 """
 
     if intention == "correction_bug":
-        instruction = """Ce ticket décrit un bug. Analyse la description ci-dessus et propose une explication claire du problème probable, ainsi qu'une suggestion concrète de correction (avec un exemple de code si pertinent)."""
-    elif intention == "generation_code":
-        instruction = """Ce ticket demande la création d'une nouvelle fonctionnalité ou de nouveau code. Analyse la description ci-dessus et génère le code correspondant, avec une brève explication de ton approche."""
-    else:
-        instruction = """Analyse ce ticket et résume ce qui est demandé, avec une suggestion sur la façon de procéder."""
+        instruction = """Analyse ce ticket en tant qu'ingénieur senior et réponds avec la structure suivante :
 
-    return en_tete + "\n" + instruction, intention
+Diagnostic :
+Explique la cause probable du bug de façon précise et technique.
+
+Solution proposée :
+Décris la correction à apporter, avec un exemple de code si pertinent.
+
+Points d'attention :
+Mentionne les effets de bord potentiels ou les tests à effectuer.
+
+Critères de validation :
+Liste les conditions qui confirment que le bug est résolu."""
+
+    elif intention == "generation_code":
+        instruction = """Analyse ce ticket en tant qu'ingénieur senior et réponds avec la structure suivante :
+
+Compréhension du besoin :
+Reformule ce qui est demandé pour confirmer ta compréhension.
+
+Approche technique :
+Explique ton choix d'implémentation et pourquoi.
+
+Code généré :
+Fournis le code complet, propre et commenté.
+
+Intégration :
+Indique comment intégrer ce code dans le projet existant."""
+
+    else:
+        instruction = """Analyse ce ticket en tant qu'ingénieur senior et réponds avec la structure suivante :
+
+Résumé du ticket :
+Explique clairement ce qui est demandé.
+
+Analyse technique :
+Identifie les enjeux techniques, les dépendances ou les risques.
+
+Plan d'action :
+Propose des étapes concrètes pour traiter ce ticket.
+
+Recommandations :
+Ajoute toute suggestion pertinente basée sur ton expérience."""
+
+    return en_tete + instruction, intention
 def envoyer_a_agent(prompt, agent_cible="gemini", base_url="http://127.0.0.1:5000"):
     """Envoie le prompt construit à l'agent choisi, via son API dédiée, avec la clé API correspondante."""
     if agent_cible == "gemini":

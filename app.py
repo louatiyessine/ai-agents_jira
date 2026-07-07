@@ -72,6 +72,28 @@ def agent2_chat():
 
     resultat = repondre_sans_rag(question)
     return jsonify(resultat)
+# app.py — ajouter cet import en haut
+from utils.mcp_client import query_via_mcp
+
+# app.py — ajouter cette route
+@app.route("/api/mcp/chat", methods=["POST"])
+def mcp_chat():
+    """
+    Nouvelle route MCP — cycle complet LLM + outils.
+    Les anciennes routes /api/chat, /api/jira etc. restent intactes.
+    """
+    data = request.get_json()
+    question = data.get("question", "")
+    agent = data.get("agent", "gemini")
+
+    if not question:
+        return jsonify({"erreur": "Question manquante"}), 400
+
+    try:
+        reponse = query_via_mcp(question, agent=agent)
+        return jsonify({"reponse": reponse})
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
 @app.route("/api/dialogue", methods=["POST"])
 def dialogue():
     """Lance un dialogue entre Agent 1 et Agent 2 sur un sujet donné."""
