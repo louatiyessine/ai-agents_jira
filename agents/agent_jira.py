@@ -77,15 +77,7 @@ def construire_prompt(ticket):
     intention = analyser_intention(ticket)
     # lezem llm yraja3 prompt "propmtToDevolopAgent" this will be sent to the gemimi agent
     # donc prompt hedhi lezemha tetbaddel bech trajja3 "propmtToDevolopAgent"  
-    en_tete = f"""Tu es un expert en ingénierie de prompts.
-Analyse ce ticket Jira et génère un prompt professionnel et précis 
-qui sera envoyé à un agent IA pour accomplir la tâche décrite.
-
-Le prompt généré doit :
-- Être directement exécutable par un agent IA
-- Contenir toutes les informations nécessaires du ticket
-- Être adapté exactement au type de tâche demandée
-
+    en_tete = f"""Tu es un ingénieur senior avec plus de 10 ans d'expérience en développement logiciel. On te confie le ticket Jira suivant :
 
 Ticket : {ticket['cle']}
 Titre : {ticket['titre']}
