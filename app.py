@@ -11,6 +11,7 @@ from agents.agent_gemini import repondre_avec_rag
 from agents.agent_llama import repondre_sans_rag
 from agents.dialogue import lancer_dialogue
 from utils.cost_calculator import generer_rapport_comparaison
+from utils.mcp_client import query_via_mcp, query_via_mcp_plan
 
 app = Flask(__name__, static_folder="static")
 CORS(app)
@@ -167,5 +168,55 @@ def jira():
         return jsonify({"erreur": f"Erreur lors du traitement du ticket : {str(erreur)}"}), 500
 
     return jsonify(resultat)
+# Stockage temporaire du plan en attente de confirmation
+plan_en_attente = {}
+
+@app.route("/api/mcp/plan", methods=["POST"])
+def mcp_plan():
+    """
+    Étape 1 : l'agent analyse le ticket et retourne le plan
+    sans rien exécuter.
+    """
+    data = request.get_json()
+    question = data.get("question", "")
+    agent = data.get("agent", "gemini")
+
+    if not question:
+        return jsonify({"erreur": "Question manquante"}), 400
+
+    try:
+        plan = query_via_mcp_plan(question, agent=agent)
+        # Sauvegarder le plan pour l'exécution ultérieure
+        plan_en_attente["question"] = question
+        plan_en_attente["agent"] = agent
+        plan_en_attente["plan"] = plan
+        return jsonify({"plan": plan})
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
+
+
+@app.route("/api/mcp/execute", methods=["POST"])
+def mcp_execute():
+    """
+    Étape 2 : exécute le plan si l'utilisateur a approuvé.
+    """
+    data = request.get_json()
+    confirmation = data.get("confirmation", "n")
+
+    if confirmation.lower() != "y":
+        plan_en_attente.clear()
+        return jsonify({"reponse": "Action annulée par l'utilisateur."})
+
+    if not plan_en_attente:
+        return jsonify({"erreur": "Aucun plan en attente."}), 400
+
+    try:
+        question = plan_en_attente["question"]
+        agent = plan_en_attente["agent"]
+        reponse = query_via_mcp(question, agent=agent)
+        plan_en_attente.clear()
+        return jsonify({"reponse": reponse})
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True, port=5000)
