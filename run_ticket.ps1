@@ -1,136 +1,137 @@
-# run_ticket.ps1
-param(
-    [string]$ticket = "SCRUM-3",
+﻿param(
+    [string]$ticket = "SCRUM-1",
     [string]$agent = "gemini"
 )
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
+$BASE_URL = "http://localhost:5000"
+
+function Invoke-Api {
+    param([string]$Uri, [string]$Body)
+    try {
+        $response = Invoke-WebRequest -Uri $Uri -Method POST -ContentType "application/json" -Body $Body -UseBasicParsing
+        return $response.Content | ConvertFrom-Json
+    } catch {
+        $errorBody = $_.ErrorDetails.Message
+        if ($errorBody) {
+            try {
+                $parsed = $errorBody | ConvertFrom-Json
+                Write-Host "Erreur API : $($parsed.erreur)" -ForegroundColor Red
+            } catch {
+                Write-Host "Erreur API : $errorBody" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "Flask ne repond pas sur $BASE_URL" -ForegroundColor Red
+            Write-Host "Lance d'abord : python app.py" -ForegroundColor Yellow
+        }
+        return $null
+    }
+}
+
+Write-Host ""
+Write-Host "Verification de Flask..." -ForegroundColor Cyan
+try {
+    Invoke-WebRequest -Uri "$BASE_URL" -UseBasicParsing -ErrorAction Stop | Out-Null
+    Write-Host "Flask OK" -ForegroundColor Green
+} catch {
+    Write-Host "Flask ne repond pas. Lance python app.py" -ForegroundColor Red
+    exit 1
+}
 
 Write-Host ""
 Write-Host "Analyse du ticket $ticket en cours..." -ForegroundColor Cyan
-Write-Host ""
 
-# ─────────────────────────────────────
-# Etape 1 : recuperer le plan
-# ─────────────────────────────────────
-$body = "{`"question`": `"Resous le ticket $ticket`", `"agent`": `"$agent`"}"
+$planBody = "{`"question`": `"Resous le ticket $ticket`", `"agent`": `"$agent`"}"
+$result = Invoke-Api -Uri "$BASE_URL/api/mcp/plan" -Body $planBody
 
-try {
-    $response = Invoke-WebRequest -Uri "http://localhost:5000/api/mcp/plan" `
-        -Method POST `
-        -ContentType "application/json" `
-        -Body $body `
-        -UseBasicParsing
-    $plan = ($response.Content | ConvertFrom-Json).plan
-} catch {
-    Write-Host "Erreur lors de la recuperation du plan." -ForegroundColor Red
-    exit
+if ($null -eq $result) {
+    Write-Host "Impossible de recuperer le plan. Arret." -ForegroundColor Red
+    exit 1
 }
 
-Write-Host "Plan d'action :" -ForegroundColor Yellow
+$quotaPattern = "429"
+if ($result.plan -match $quotaPattern) {
+    Write-Host "Quota Gemini depasse — bascule sur Llama" -ForegroundColor Yellow
+    $agent = "llama"
+    $planBody2 = "{`"question`": `"Resous le ticket $ticket`", `"agent`": `"llama`"}"
+    $result = Invoke-Api -Uri "$BASE_URL/api/mcp/plan" -Body $planBody2
+    if ($null -eq $result) {
+        Write-Host "Llama aussi indisponible. Arret." -ForegroundColor Red
+        exit 1
+    }
+}
+
+Write-Host ""
+Write-Host "Plan d action :" -ForegroundColor Yellow
 Write-Host "-------------------------------------" -ForegroundColor Gray
-Write-Host $plan
+Write-Host $result.plan
 Write-Host "-------------------------------------" -ForegroundColor Gray
 Write-Host ""
 
-# ─────────────────────────────────────
-# Etape 2 : confirmation execution
-# ─────────────────────────────────────
 $confirmation = Read-Host "Accepter et executer ? [y/n]"
 
 if ($confirmation -ne "y") {
-    Write-Host ""
     Write-Host "Action annulee." -ForegroundColor Red
-    $body2 = '{"confirmation": "n"}'
-    Invoke-WebRequest -Uri "http://localhost:5000/api/mcp/execute" `
-        -Method POST `
-        -ContentType "application/json" `
-        -Body $body2 `
-        -UseBasicParsing | Out-Null
-    exit
+    $cancelBody = "{`"confirmation`": `"n`"}"
+    Invoke-Api -Uri "$BASE_URL/api/mcp/execute" -Body $cancelBody | Out-Null
+    exit 0
 }
 
-# ─────────────────────────────────────
-# Etape 3 : execution
-# ─────────────────────────────────────
 Write-Host ""
 Write-Host "Execution en cours..." -ForegroundColor Cyan
 
-try {
-    $body2 = '{"confirmation": "y"}'
-    $response2 = Invoke-WebRequest -Uri "http://localhost:5000/api/mcp/execute" `
-        -Method POST `
-        -ContentType "application/json" `
-        -Body $body2 `
-        -UseBasicParsing
+$execBody = "{`"confirmation`": `"y`"}"
+$result2 = Invoke-Api -Uri "$BASE_URL/api/mcp/execute" -Body $execBody
 
-    $resultat = ($response2.Content | ConvertFrom-Json).reponse
-    Write-Host ""
-    Write-Host "Resultat :" -ForegroundColor Green
-    Write-Host "-------------------------------------" -ForegroundColor Gray
-    Write-Host $resultat
-    Write-Host "-------------------------------------" -ForegroundColor Gray
-
-} catch {
-    Write-Host "Erreur lors de l'execution." -ForegroundColor Red
-    exit
+if ($null -eq $result2) {
+    Write-Host "Erreur lors de l execution." -ForegroundColor Red
+    exit 1
 }
 
-# ─────────────────────────────────────
-# Etape 4 : proposition push GitHub
-# On cherche le repo Git du projet modifie
-# ─────────────────────────────────────
+Write-Host ""
+Write-Host "Resultat :" -ForegroundColor Green
+Write-Host "-------------------------------------" -ForegroundColor Gray
+Write-Host $result2.reponse
+Write-Host "-------------------------------------" -ForegroundColor Gray
+
 Write-Host ""
 $pushConfirm = Read-Host "Pousser les changements sur GitHub ? [y/n]"
 
 if ($pushConfirm -ne "y") {
-    Write-Host ""
-    Write-Host "Changements non pousses sur GitHub." -ForegroundColor Yellow
-    exit
+    Write-Host "Changements non pousses." -ForegroundColor Yellow
+    exit 0
 }
 
-# ─────────────────────────────────────
-# Etape 5 : trouver le dossier Git
-# On demande a Flask quel projet a ete modifie
-# ─────────────────────────────────────
 Write-Host ""
-Write-Host "Recherche du projet Git modifie..." -ForegroundColor Cyan
+Write-Host "Recherche du repo Git..." -ForegroundColor Cyan
 
-# Recuperer le chemin du projet depuis la reponse de l'agent
-# On cherche un chemin dans le resultat retourne
 $projectPath = $null
 
-if ($resultat -match "C:\\[^\n`"]+") {
-    $projectPath = $matches[0].TrimEnd('\', '.', ' ')
-    
-    # Remonter jusqu'au dossier racine du projet (qui contient .git)
-    $currentPath = $projectPath
-    while ($currentPath -ne "" -and $currentPath -ne $null) {
+if ($result2.reponse -match "([A-Z]:\\[^\n]+)") {
+    $foundPath = $matches[1].TrimEnd("\", ".", " ")
+    $currentPath = $foundPath
+    while ($currentPath -and $currentPath -ne (Split-Path $currentPath -Parent)) {
         if (Test-Path (Join-Path $currentPath ".git")) {
             $projectPath = $currentPath
             break
         }
-        $parent = Split-Path $currentPath -Parent
-        if ($parent -eq $currentPath) { break }
-        $currentPath = $parent
+        $currentPath = Split-Path $currentPath -Parent
     }
 }
 
-if ($projectPath -eq $null -or -not (Test-Path (Join-Path $projectPath ".git"))) {
-    Write-Host ""
-    Write-Host "Aucun repo Git trouve automatiquement." -ForegroundColor Yellow
-    $projectPath = Read-Host "Entre le chemin du projet Git manuellement"
+if (-not $projectPath -or -not (Test-Path (Join-Path $projectPath ".git"))) {
+    Write-Host "Repo Git non detecte automatiquement." -ForegroundColor Yellow
+    $projectPath = Read-Host "Entre le chemin du projet Git"
+    if (-not (Test-Path (Join-Path $projectPath ".git"))) {
+        Write-Host "Chemin invalide." -ForegroundColor Red
+        exit 1
+    }
 }
 
-Write-Host "Repo Git trouve : $projectPath" -ForegroundColor Green
+Write-Host "Repo Git : $projectPath" -ForegroundColor Green
 
-# ─────────────────────────────────────
-# Etape 6 : git add + commit + push
-# ─────────────────────────────────────
-Write-Host ""
 $commitMsg = Read-Host "Message du commit (Entree pour message automatique)"
-
 if ($commitMsg -eq "") {
     $commitMsg = "fix: resolution du ticket $ticket via agent IA"
 }
@@ -138,22 +139,22 @@ if ($commitMsg -eq "") {
 Write-Host ""
 Write-Host "Push en cours..." -ForegroundColor Cyan
 
+$previousLocation = Get-Location
 try {
     Set-Location $projectPath
-
     git add .
-    Write-Host "git add . : OK" -ForegroundColor Green
-
+    if ($LASTEXITCODE -ne 0) { throw "git add a echoue" }
+    Write-Host "git add : OK" -ForegroundColor Green
     git commit -m $commitMsg
+    if ($LASTEXITCODE -ne 0) { throw "git commit a echoue" }
     Write-Host "git commit : OK" -ForegroundColor Green
-
     git push
+    if ($LASTEXITCODE -ne 0) { throw "git push a echoue" }
     Write-Host "git push : OK" -ForegroundColor Green
-
     Write-Host ""
-    Write-Host "Changements pousses sur GitHub avec succes !" -ForegroundColor Green
-    Write-Host "Commit : $commitMsg" -ForegroundColor Gray
-
+    Write-Host "Changements pousses sur GitHub !" -ForegroundColor Green
 } catch {
     Write-Host "Erreur Git : $_" -ForegroundColor Red
+} finally {
+    Set-Location $previousLocation
 }
