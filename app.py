@@ -4,14 +4,14 @@ from werkzeug.utils import secure_filename
 from rag.rag_engine import ajouter_document
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from agents.agent_jira import traiter_ticket
+from agents.agent_jira import traiter_ticket, lire_ticket, construire_prompt
 sys.path.append(os.path.dirname(__file__))
 from utils.agent_client import appeler_agent_interne
 from agents.agent_gemini import repondre_avec_rag
 from agents.agent_llama import repondre_sans_rag
 from agents.dialogue import lancer_dialogue
 from utils.cost_calculator import generer_rapport_comparaison
-from utils.mcp_client import query_via_mcp, query_via_mcp_plan
+from utils.mcp_client import query_via_mcp, query_via_mcp_plan, query_via_mcp_structured
 
 app = Flask(__name__, static_folder="static")
 CORS(app)
@@ -168,6 +168,77 @@ def jira():
         return jsonify({"erreur": f"Erreur lors du traitement du ticket : {str(erreur)}"}), 500
 
     return jsonify(resultat)
+@app.route("/api/pipeline/prepare", methods=["POST"])
+def pipeline_prepare():
+    """
+    Étapes 1 à 3 du pipeline (rapides, sans appel à l'IA lourde) :
+    lit le ticket sur Jira, détecte l'intention, et construit le prompt.
+    Retourne les VRAIES données de chaque étape pour l'affichage Angular.
+    """
+    donnees = request.get_json()
+    cle_ticket = donnees.get("cle_ticket")
+
+    if not cle_ticket:
+        return jsonify({"erreur": "Le champ 'cle_ticket' est requis."}), 400
+
+    try:
+        ticket = lire_ticket(cle_ticket)
+        prompt, intention = construire_prompt(ticket)
+    except Exception as erreur:
+        return jsonify({"erreur": f"Impossible de préparer le ticket : {str(erreur)}"}), 500
+
+    return jsonify({
+        "ticket": ticket,
+        "intention": intention,
+        "prompt": prompt,
+    })
+
+
+@app.route("/api/mcp/run", methods=["POST"])
+def mcp_run():
+    """
+    Exécution MCP RÉELLE et structurée : lance la vraie boucle d'outils
+    (jira__, fs__, atlassian__) qui agit vraiment sur les fichiers,
+    et retourne la liste des outils appelés + la réponse finale.
+    Utilisé par l'interface Angular pour afficher la démarche complète.
+    """
+    donnees = request.get_json()
+    question = donnees.get("question", "")
+    agent = donnees.get("agent", "gemini")
+
+    if not question:
+        return jsonify({"erreur": "Le champ 'question' est requis."}), 400
+
+    try:
+        resultat = query_via_mcp_structured(question, agent=agent)
+        return jsonify({
+            "actions": resultat["actions"],
+            "reponse": resultat["final"],
+        })
+    except Exception as e:
+        return jsonify({"erreur": str(e)}), 500
+
+
+@app.route("/api/pipeline/agent", methods=["POST"])
+def pipeline_agent():
+    """
+    Étape 4 du pipeline (lente) : envoie le prompt construit à l'agent choisi,
+    via l'API interne authentifiée (même règle que tout appel d'agent).
+    """
+    donnees = request.get_json()
+    prompt = donnees.get("prompt")
+    agent = donnees.get("agent", "gemini")
+
+    if not prompt:
+        return jsonify({"erreur": "Le champ 'prompt' est requis."}), 400
+
+    if agent not in ("gemini", "llama"):
+        return jsonify({"erreur": f"Agent inconnu : {agent}."}), 400
+
+    resultat = appeler_agent_interne(agent, prompt)
+    return jsonify(resultat)
+
+
 # Stockage temporaire du plan en attente de confirmation
 plan_en_attente = {}
 

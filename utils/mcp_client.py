@@ -134,8 +134,12 @@ async def _ask_llm(messages: list, tools: list, agent: str) -> dict:
         raise RuntimeError(f"Llama aussi indisponible : {str(e)}")
 
 
-async def run_mcp_query(user_message: str, agent: str = "gemini") -> str:
-    """Cycle MCP complet — trois serveurs, boucle d'exécution stable."""
+async def _run_mcp_core(user_message: str, agent: str = "gemini") -> dict:
+    """
+    Cycle MCP complet — trois serveurs, boucle d'exécution stable.
+    Retourne un dict structuré : {"actions": [...], "final": "..."}.
+    Chaque action = {"tool": nom, "args": {...}, "result": texte}.
+    """
     jira_params, fs_params, atl_params = _get_server_params()
 
     async with stdio_client(jira_params) as (jr, jw):
@@ -195,13 +199,7 @@ async def run_mcp_query(user_message: str, agent: str = "gemini") -> str:
 
                             if not tool_call.get("tool_name"):
                                 final = tool_call.get("direct_response", "")
-                                if actions:
-                                    resume = "\n".join([
-                                        f"- {a['tool']} : {a['result'][:120]}..."
-                                        for a in actions
-                                    ])
-                                    return f"Actions effectuées :\n{resume}\n\n---\n\n{final}"
-                                return final
+                                return {"actions": actions, "final": final}
 
                             tool_name = tool_call["tool_name"]
                             tool_args = tool_call["tool_args"]
@@ -248,7 +246,21 @@ async def run_mcp_query(user_message: str, agent: str = "gemini") -> str:
                                 except Exception:
                                     pass
 
-                    return "Limite de 10 actions atteinte."
+                    return {"actions": actions,
+                            "final": "Limite de 10 actions atteinte."}
+
+
+async def run_mcp_query(user_message: str, agent: str = "gemini") -> str:
+    """Version texte (compatibilité) — formate les actions + la réponse finale."""
+    data = await _run_mcp_core(user_message, agent)
+    actions, final = data["actions"], data["final"]
+    if actions:
+        resume = "\n".join([
+            f"- {a['tool']} : {a['result'][:120]}..."
+            for a in actions
+        ])
+        return f"Actions effectuées :\n{resume}\n\n---\n\n{final}"
+    return final
 
 
 async def run_mcp_plan(user_message: str, agent: str = "gemini") -> str:
@@ -309,3 +321,21 @@ def query_via_mcp_plan(user_message: str, agent: str = "gemini") -> str:
     except Exception as e:
         traceback.print_exc()
         raise RuntimeError(f"Erreur MCP plan : {str(e)}")
+
+
+def query_via_mcp_structured(user_message: str, agent: str = "gemini") -> dict:
+    """
+    Version synchrone STRUCTURÉE pour Flask.
+    Retourne {"actions": [...], "final": "..."} — utilisé par l'interface Angular
+    pour afficher chaque outil MCP réellement appelé (la démarche).
+    """
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(_run_mcp_core(user_message, agent))
+        finally:
+            loop.close()
+    except Exception as e:
+        traceback.print_exc()
+        raise RuntimeError(f"Erreur MCP structuré : {str(e)}")
