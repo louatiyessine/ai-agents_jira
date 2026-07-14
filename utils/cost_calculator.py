@@ -3,16 +3,6 @@ TARIFS = {
         "prix_entree_par_million": 0.30,
         "prix_sortie_par_million": 2.50,
     },
-    "llama3.2-simule": {
-        "prix_entree_par_million": 0.00,
-        "prix_sortie_par_million": 0.00,
-    },
-}
-TARIFS = {
-    "gemini-2.5-flash": {
-        "prix_entree_par_million": 0.30,
-        "prix_sortie_par_million": 2.50,
-    },
     "llama3.2-local-reel": {
         "prix_entree_par_million": 0.00,
         "prix_sortie_par_million": 0.00,

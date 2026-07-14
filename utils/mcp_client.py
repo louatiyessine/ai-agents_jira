@@ -10,6 +10,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Sécurité : dossier racine auquel l'agent a accès en lecture/écriture via le
+# serveur MCP filesystem. Restreint volontairement à l'espace de travail
+# (au lieu de tout C:\) pour éviter qu'un mauvais prompt touche des fichiers
+# système. Surchargeable via la variable d'environnement MCP_FS_ROOT.
+FS_ALLOWED_DIR = os.getenv("MCP_FS_ROOT", r"C:\licence informatique")
+
 
 def _get_server_params():
     """Retourne les paramètres des 3 serveurs MCP."""
@@ -21,7 +27,7 @@ def _get_server_params():
         ),
         StdioServerParameters(
             command="npx",
-            args=["-y", "@modelcontextprotocol/server-filesystem", "C:\\"],
+            args=["-y", "@modelcontextprotocol/server-filesystem", FS_ALLOWED_DIR],
             env=None
         ),
         StdioServerParameters(
@@ -186,15 +192,7 @@ async def _run_mcp_core(user_message: str, agent: str = "gemini") -> dict:
                     messages = [{"role": "user", "content": user_message}]
 
                     try:
-                        appels_gemini = 0
-                        MAX_APPELS_GEMINI = 15 
                         for _ in range(10):
-                            
-                            if agent == "gemini":
-                                appels_gemini += 1
-                                if appels_gemini >= MAX_APPELS_GEMINI:
-                                    print(f"Attention : {appels_gemini} appels Gemini — proche de la limite journalière")
-                                    agent = "llama" 
                             tool_call = await _ask_llm(messages, all_tools, agent)
 
                             if not tool_call.get("tool_name"):

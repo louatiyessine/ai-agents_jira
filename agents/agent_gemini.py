@@ -33,6 +33,7 @@ RÉPONSE :"""
             contents=prompt
         )
     except Exception as erreur:
+        print(f"[agent_gemini] Erreur Gemini : {erreur}")
         return {
             "reponse": "Le service Gemini est temporairement surchargé. Merci de réessayer dans quelques secondes.",
             "tokens_entree": 0,

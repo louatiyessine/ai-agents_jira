@@ -9,6 +9,5 @@ langchain-ollama
 chromadb
 pypdf
 python-dotenv
-tiktoken
 langchain-chroma
 requests

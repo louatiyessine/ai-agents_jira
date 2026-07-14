@@ -8,6 +8,7 @@ def repondre_sans_rag(question):
             messages=[{"role": "user", "content": question}]
         )
     except Exception as erreur:
+        print(f"[agent_llama] Erreur Ollama : {erreur}")
         return {
             "reponse": "Le service Llama (Ollama) est indisponible. Vérifiez qu'Ollama tourne bien sur votre machine.",
             "tokens_entree": 0,

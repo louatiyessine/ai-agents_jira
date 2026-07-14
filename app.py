@@ -73,10 +73,6 @@ def agent2_chat():
 
     resultat = repondre_sans_rag(question)
     return jsonify(resultat)
-# app.py — ajouter cet import en haut
-from utils.mcp_client import query_via_mcp
-
-# app.py — ajouter cette route
 @app.route("/api/mcp/chat", methods=["POST"])
 def mcp_chat():
     """
@@ -217,26 +213,6 @@ def mcp_run():
         })
     except Exception as e:
         return jsonify({"erreur": str(e)}), 500
-
-
-@app.route("/api/pipeline/agent", methods=["POST"])
-def pipeline_agent():
-    """
-    Étape 4 du pipeline (lente) : envoie le prompt construit à l'agent choisi,
-    via l'API interne authentifiée (même règle que tout appel d'agent).
-    """
-    donnees = request.get_json()
-    prompt = donnees.get("prompt")
-    agent = donnees.get("agent", "gemini")
-
-    if not prompt:
-        return jsonify({"erreur": "Le champ 'prompt' est requis."}), 400
-
-    if agent not in ("gemini", "llama"):
-        return jsonify({"erreur": f"Agent inconnu : {agent}."}), 400
-
-    resultat = appeler_agent_interne(agent, prompt)
-    return jsonify(resultat)
 
 
 # Stockage temporaire du plan en attente de confirmation
