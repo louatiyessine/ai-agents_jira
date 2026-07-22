@@ -1,6 +1,5 @@
 # mcp_server.py
 import asyncio
-import os
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp import types
@@ -45,29 +44,6 @@ async def list_tools() -> list[types.Tool]:
                 "required": ["ticket_key"]
             }
         ),
-
-        # ─────────────────────────────────────
-        # OUTIL 2 : search_project
-        # Cherche un projet sur le PC par nom
-        # Aucun serveur officiel ne fait ça non plus
-        # ─────────────────────────────────────
-        types.Tool(
-            name="search_project",
-            description=(
-                "Cherche un dossier projet sur le PC par nom ou mot-clé. "
-                "Parcourt les disques durs et retourne les chemins trouvés."
-            ),
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "project_name": {
-                        "type": "string",
-                        "description": "Nom ou mot-clé du projet à chercher sur le PC"
-                    }
-                },
-                "required": ["project_name"]
-            }
-        ),
     ]
 
 
@@ -97,48 +73,6 @@ Tokens consommés : {resultat['tokens_total']}
 
 {resultat['reponse_agent']}
 """
-            return [types.TextContent(type="text", text=texte)]
-
-        elif name == "search_project":
-            project_name = arguments["project_name"].lower()
-            resultats = []
-
-            racines = [
-                os.path.expanduser("~"),
-                "C:\\",
-                "D:\\" if os.path.exists("D:\\") else None,
-            ]
-            racines = [r for r in racines if r]
-
-            for racine in racines:
-                try:
-                    for root, dirs, files in os.walk(racine):
-                        dirs[:] = [
-                            d for d in dirs
-                            if d not in [
-                                "Windows", "System32", "Program Files",
-                                "Program Files (x86)", "AppData", "node_modules",
-                                ".git", "__pycache__", "venv", ".venv"
-                            ]
-                        ]
-                        for d in dirs:
-                            if project_name in d.lower():
-                                resultats.append(os.path.join(root, d))
-                                if len(resultats) >= 5:
-                                    break
-                        if len(resultats) >= 5:
-                            break
-                except PermissionError:
-                    continue
-
-            if not resultats:
-                texte = f"Aucun projet trouvé avec le nom '{arguments['project_name']}'."
-            else:
-                lignes = [f"Projets trouvés pour '{arguments['project_name']}' :"]
-                for r in resultats:
-                    lignes.append(f"- {r}")
-                texte = "\n".join(lignes)
-
             return [types.TextContent(type="text", text=texte)]
 
         else:

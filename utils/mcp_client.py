@@ -84,6 +84,10 @@ OUTILS JIRA (préfixe jira__) : pipeline complet — analyse + prompt IA + répo
 OUTILS FILESYSTEM (préfixe fs__) : lire, créer, modifier des fichiers sur le PC
 OUTILS ATLASSIAN (préfixe atlassian__) : accès direct à Jira
 
+IMPORTANT — pour trouver un dossier ou un projet par nom avec fs__search_files,
+utilise TOUJOURS un motif récursif "**/NOM" (par exemple "**/CASS TSYP13").
+Un motif simple comme "*NOM*" ne descend PAS dans les sous-dossiers et ne trouvera rien.
+
 Liste complète :
 {tools_description}
 
@@ -192,7 +196,7 @@ async def _run_mcp_core(user_message: str, agent: str = "gemini") -> dict:
                     messages = [{"role": "user", "content": user_message}]
 
                     try:
-                        for _ in range(10):
+                        for _ in range(15):
                             tool_call = await _ask_llm(messages, all_tools, agent)
 
                             if not tool_call.get("tool_name"):
@@ -245,7 +249,7 @@ async def _run_mcp_core(user_message: str, agent: str = "gemini") -> dict:
                                     pass
 
                     return {"actions": actions,
-                            "final": "Limite de 10 actions atteinte."}
+                            "final": "Limite de 15 actions atteinte."}
 
 
 async def run_mcp_query(user_message: str, agent: str = "gemini") -> str:

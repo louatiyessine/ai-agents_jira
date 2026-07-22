@@ -387,7 +387,7 @@ Exemple réel avec le ticket SCRUM-3 :
 ```mermaid
 flowchart LR
     T[SCRUM-3] --> J[jira__solve_jira_ticket<br/>lit et analyse]
-    J --> SP[jira__search_project<br/>trouve le projet]
+    J --> SP[fs__search_files<br/>trouve le projet]
     SP --> W[fs__write_file<br/>crée logger.py]
     W --> ED[fs__edit_file<br/>modifie server.py]
 ```
@@ -411,10 +411,11 @@ flowchart LR
 ```
 
 La répartition des rôles est claire :
-- **Notre serveur maison** expose deux outils sur mesure que personne d'autre ne fournit : `solve_jira_ticket` (le pipeline complet : intention + prompt + réponse d'ingénieur senior) et `search_project` (chercher un projet par nom sur le PC).
+- **Notre serveur maison** (`mcp_server.py`) n'expose plus qu'**un seul** outil sur mesure, celui que personne d'autre ne fournit : `solve_jira_ticket` (le pipeline complet : intention + prompt + réponse d'ingénieur senior).
+- **Le serveur filesystem** se charge de tout ce qui touche aux fichiers, y compris **trouver un projet par nom** grâce à son outil `search_files`. Un détail important a été découvert au passage : pour chercher un dossier imbriqué, il faut lui donner un motif **récursif** `**/NOM` (un simple `*` ne descend pas dans les sous-dossiers) — cette consigne est donnée automatiquement à l'agent.
 - **mcp-atlassian** fournit tout l'accès Jira « standard ».
 
-*(Précision : notre serveur `mcp_server.py` expose donc deux outils sur mesure, et l'accès Jira standard est désormais délégué à mcp-atlassian — cela évite de réécrire ce qui existe déjà officiellement.)*
+*(Choix d'ingénierie : au départ, notre serveur maison proposait aussi un outil `search_project` qui parcourait tout le disque. On l'a retiré en constatant que le serveur filesystem faisait déjà ce travail avec `search_files`, à l'intérieur du dossier autorisé. Résultat : une seule porte d'entrée vers les fichiers, cohérente avec la restriction de sécurité, et moins de code à maintenir.)*
 
 ### Sécurité : limiter l'accès de l'agent aux fichiers
 
@@ -444,7 +445,7 @@ Enfin, une revue complète des deux projets a permis de nettoyer le code **sans 
 - Le serveur tourne actuellement en mode développement, adapté à une démonstration mais pas à un usage en production avec de nombreux utilisateurs.
 - La génération du `promptToDevelopAgent` consomme un appel supplémentaire à l'API Gemini avant chaque traitement de ticket — ce qui double le nombre d'appels pour cette fonctionnalité et augmente légèrement le coût et le temps de réponse.
 - L'API Gemini gratuite est limitée à 20 requêtes par jour — au-delà de cette limite, le système retourne une erreur 429. Pour un usage intensif, un abonnement payant ou l'utilisation de l'Agent 2 (Llama, gratuit et sans limite) est recommandé.
-- La recherche de projet sur le PC (`search_project`) parcourt le disque dur entier, ce qui peut prendre quelques secondes sur les machines avec beaucoup de fichiers. Les dossiers système sont ignorés pour accélérer la recherche.
+- La recherche d'un projet par nom se fait désormais avec l'outil `search_files` du serveur filesystem, à l'intérieur du dossier de travail. Sur un dossier volumineux, la recherche récursive peut prendre quelques secondes.
 - L'interface Angular et le serveur Flask sont deux projets séparés qui doivent tourner **en même temps** (ports 4200 et 5000) pour que le pipeline fonctionne.
 - Dans le pipeline visuel, les trois premières étapes s'affichent avec un court délai pour l'effet « une étape à la fois » ; seule l'étape d'exécution de l'agent est réellement en temps réel. Un affichage totalement « en direct » (chaque outil au moment exact où il s'exécute) nécessiterait une technique de streaming (SSE) qui n'est pas encore en place.
 - Depuis la restriction de sécurité, l'agent ne peut agir que sur les fichiers situés dans le dossier de travail ; un projet placé ailleurs ne serait pas accessible sans élargir la configuration (`MCP_FS_ROOT`).
